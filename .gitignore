@@ -1,0 +1,26 @@
+################################ Python ###############################
+
+# Exclusion des environnements virtuels
+.venv/
+
+# Fichiers spécifiques à Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Fichiers d'environnement
+backend/sigs_backen/.env
+
+# Fichiers générés par Docker
+*.pid
+*.log
+################################ Node.js ################################
+
+# Exclusion des modules Node.js
+node_modules/
+
+# Fichiers générés par build
+dist/
+
+# Fichiers d'environnement
+.env

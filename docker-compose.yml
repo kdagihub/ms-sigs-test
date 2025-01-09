@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8001:8000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - common-network
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file:
+      - ./frontend/.env
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "8081:80"
+    networks:
+      - common-network
+
+
+  db:  # Pas besoin de redéclarer PostgreSQL ici
+    external: true
+    name: common_postgres  # Nom du service PostgreSQL défini dans `common/docker-compose.yml`
+
+  redis:
+    image: redis:6
+    volumes:
+      - ../common/redis/data:/data
+
+
+celery:
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  command: celery -A sigs_backend worker --loglevel=info
+  container_name: app1-celery
+  depends_on:
+    - backend
+    - redis
+  environment:
+    - CELERY_BROKER_URL=redis://common-redis:6379/0
+  networks:
+    - common-network
+
+networks:
+  common-network:
+    external: true
