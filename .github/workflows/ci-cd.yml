@@ -1,0 +1,66 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres_user
+          POSTGRES_PASSWORD: secure_password
+          POSTGRES_DB: app_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres_user"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7.
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Build backend
+      run: docker-compose -f docker-compose.yml build backend
+
+    - name: Build frontend
+      run: docker-compose -f docker-compose.yml build frontend
+
+    - name: Run backend tests
+      run: docker-compose -f docker-compose.yml run backend pytest
+
+    - name: Run frontend tests
+      run: docker-compose -f docker-compose.yml run frontend npm test
+
+    - name: Lint backend
+      run: docker-compose -f docker-compose.yml run backend flake8
+
+    - name: Lint frontend
+      run: docker-compose -f docker-compose.yml run frontend npm run lint
